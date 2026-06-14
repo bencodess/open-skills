@@ -1,6 +1,6 @@
 {
   "name": "@bencodess/open-skills",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "CLI for the OpenCode skills registry — list, install, read, sync, update agent skills",
   "bin": {
     "open-skill": "bin/open-skill"
