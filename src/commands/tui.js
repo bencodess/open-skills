@@ -18,7 +18,22 @@ async function tui(args) {
   const installedNames = new Set(installed.map(s => s.name))
   let installedCount = installed.length
 
-  const renderer = await createCliRenderer({ exitOnCtrlC: true })
+  let renderer
+  try {
+    renderer = await createCliRenderer({ exitOnCtrlC: true })
+  } catch (err) {
+    console.error()
+    console.error('  error: OpenTUI native renderer is not available on this runtime.')
+    console.error()
+    console.error('  The TUI requires Bun or Node.js 26.3+ with --experimental-ffi.')
+    console.error()
+    console.error('  Install Bun: curl -fsSL https://bun.sh/install | bash')
+    console.error('  Then run:     bun open-skill')
+    console.error()
+    console.error('  Or use the classic CLI: open-skill list / install / read / sync / update')
+    console.error()
+    process.exit(1)
+  }
 
   const C = {
     orange: '#f97316',

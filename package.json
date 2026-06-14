@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "description": "CLI for the OpenCode skills registry — list, install, read, sync, update agent skills",
   "bin": {
-    "open-skill": "bin/open-skill.js"
+    "open-skill": "bin/open-skill"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if command -v bun &>/dev/null; then
+  exec bun "$DIR/open-skill.js" "$@"
+else
+  exec node "$DIR/open-skill.js" "$@"
+fi
