@@ -104,5 +104,5 @@ All skills are MIT licensed.
 ---
 
 <p align="center">
-  <sub>built with 🔧 in the basement · conforming to opencode skill spec</sub>
+  <sub>built in the basement by bencodess</sub>
 </p>
