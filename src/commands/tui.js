@@ -259,6 +259,9 @@ async function tui(args) {
     }
   }
 
+  renderer.root.add(buildList())
+  process.nextTick(() => focusSearch())
+
   renderer.keyInput.on('keypress', key => {
     if (awaitingKey) {
       awaitingKey = false
@@ -280,22 +283,21 @@ async function tui(args) {
       return
     }
 
+    if (key.name === 'return' && !searchFocused && skillSelect) {
+      const idx = skillSelect.getSelectedIndex()
+      const opts = skillSelect.options
+      if (idx >= 0 && opts && opts[idx] && opts[idx].value) {
+        detailSkill = opts[idx].value
+        showDetail()
+      }
+      return
+    }
+
     if (key.name === 'tab') {
       if (searchFocused) {
         focusList()
       } else {
         focusSearch()
-      }
-      return
-    }
-
-    if (key.name === 'return') {
-      if (!searchFocused && skillSelect) {
-        const opt = skillSelect.getSelectedOption()
-        if (opt && opt.value) {
-          detailSkill = opt.value
-          showDetail()
-        }
       }
       return
     }
@@ -311,9 +313,6 @@ async function tui(args) {
       }
     }
   })
-
-  renderer.root.add(buildList())
-  process.nextTick(() => focusSearch())
 }
 
 module.exports = tui
