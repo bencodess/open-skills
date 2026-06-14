@@ -51,6 +51,7 @@ async function tui(args) {
   let currentFilter = ''
   let detailSkill = null
   let awaitingKey = false
+  let searchFocused = true
 
   function filteredSkills() {
     if (!currentFilter) return registry
@@ -86,13 +87,23 @@ async function tui(args) {
     installedCount = installed.length
   }
 
+  function focusSearch() {
+    searchFocused = true
+    searchInput?.focus()
+  }
+
+  function focusList() {
+    searchFocused = false
+    skillSelect?.focus()
+  }
+
   let searchInput
   let skillSelect
 
   function buildList() {
     searchInput = Input({
       width: '100%',
-      placeholder: '  🔍 filter skills by name, description, tags...',
+      placeholder: '  🔍 filter skills...',
       backgroundColor: C.bg,
       focusedBackgroundColor: C.panel,
       textColor: C.text,
@@ -105,8 +116,8 @@ async function tui(args) {
       options: fmtOpts(filteredSkills()),
       backgroundColor: C.bg,
       textColor: C.text,
-      selectedBackgroundColor: C.panel,
-      selectedTextColor: C.orange,
+      selectedBackgroundColor: C.orangeDark,
+      selectedTextColor: '#fff',
       descriptionColor: C.muted,
       selectedDescriptionColor: C.muted,
       showScrollIndicator: true,
@@ -119,7 +130,7 @@ async function tui(args) {
       skillSelect.options = fmtOpts(filteredSkills())
     })
 
-    searchInput.on('enter', () => skillSelect.focus())
+    searchInput.on('enter', () => focusList())
 
     skillSelect.on('itemSelected', (index, option) => {
       detailSkill = option.value
@@ -172,7 +183,7 @@ async function tui(args) {
         paddingLeft: 2,
         paddingRight: 2,
       },
-      Text({ content: '  ↑↓ nav  •  Enter install/view  •  / search  •  q quit', fg: C.muted }),
+      Text({ content: '  [Tab] switch focus  •  ↑↓ nav  •  Enter detail  •  q quit', fg: C.muted }),
     )
 
     return Box(
@@ -206,7 +217,7 @@ async function tui(args) {
     detailSkill = null
     renderer.root.removeAll()
     renderer.root.add(buildList())
-    setTimeout(() => skillSelect?.focus(), 50)
+    process.nextTick(() => searchFocused ? searchInput?.focus() : skillSelect?.focus())
   }
 
   function showDetail() {
@@ -272,18 +283,29 @@ async function tui(args) {
       return
     }
 
+    if (key.name === 'tab') {
+      if (searchFocused) {
+        focusList()
+      } else {
+        focusSearch()
+      }
+      return
+    }
+
     if (key.name === '/') {
-      searchInput?.focus()
+      focusSearch()
     } else if (key.name === 'escape') {
-      searchInput.value = ''
-      currentFilter = ''
-      skillSelect.options = fmtOpts(registry)
-      skillSelect?.focus()
+      if (searchFocused) {
+        searchInput.value = ''
+        currentFilter = ''
+        skillSelect.options = fmtOpts(registry)
+        focusList()
+      }
     }
   })
 
   renderer.root.add(buildList())
-  setTimeout(() => skillSelect?.focus(), 50)
+  process.nextTick(() => focusSearch())
 }
 
 module.exports = tui
