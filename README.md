@@ -14,6 +14,7 @@
   <a href="#-quick-start"><img src="https://img.shields.io/badge/quick%20start-f97316?style=flat-square" alt="Quick Start"></a>
   <a href="./skills.json"><img src="https://img.shields.io/badge/skills.json-2a2a3a?style=flat-square" alt="skills.json"></a>
   <a href="./CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributing-2a2a3a?style=flat-square" alt="Contributing"></a>
+  <a href="./package.json"><img src="https://img.shields.io/badge/npm%20package-2a2a3a?style=flat-square" alt="npm package"></a>
   <a href="https://github.com/bencodess/open-skills/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-2a2a3a?style=flat-square" alt="License"></a>
 </p>
 
@@ -28,18 +29,29 @@
 ## Quick Start
 
 ```bash
-# browse the catalog (dev server)
-cd opencode_skills && npm run dev
+# install the CLI
+npm install -g open-skills
 
-# add a skill to your agent
-# (coming soon: opencode skill add <name>)
+# list available skills
+open-skill list
+
+# install a skill (saves to .opencode/skills/<name>/SKILL.md)
+open-skill install git-release
+
+# read an installed skill
+open-skill read git-release
+
+# sync with the registry
+open-skill sync
+
+# update all installed skills
+open-skill update
 ```
 
-The registry is a plain JSON file. To use a skill, copy its `SKILL.md` to your agent's skills directory:
+Or use the web UI locally:
 
 ```bash
-# install a skill manually
-curl -O https://raw.githubusercontent.com/bencodess/open-skills/main/skills.json
+cd opencode_skills && npm run dev
 ```
 
 ---
@@ -60,7 +72,7 @@ Skills are tagged for discovery:
 
 | Tag | Skills |
 |-----|--------|
-| `design` | ui-ux-pro-max |
+| `design` | architecture |
 | `testing` | webapp-testing, test |
 | `git` | git-release, commit |
 | `devops` | ci-cd, deploy, docker, monitoring |

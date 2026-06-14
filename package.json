@@ -1,0 +1,17 @@
+{
+  "name": "open-skills",
+  "version": "0.1.0",
+  "description": "CLI for the OpenCode skills registry — list, install, read, sync, update agent skills",
+  "bin": {
+    "open-skill": "bin/open-skill.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bencodess/open-skills.git"
+  },
+  "keywords": ["opencode", "skills", "agent", "registry", "cli"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
