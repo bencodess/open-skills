@@ -28,8 +28,8 @@
 ## Quick Start
 
 ```bash
-# browse the catalog
-npx opencode-skills          # web UI
+# browse the catalog (dev server)
+cd opencode_skills && npm run dev
 
 # add a skill to your agent
 # (coming soon: opencode skill add <name>)
@@ -52,7 +52,7 @@ curl -O https://raw.githubusercontent.com/bencodess/open-skills/main/skills.json
 | experimental | 12 | Functional but may change |
 | community | 4 | Community-submitted, best-effort maintenance |
 
-Browse the full list in [`skills.json`](./skills.json) or use the [web index](https://bencodess.github.io/open-skills).
+Browse the full list in [`skills.json`](./skills.json) or run the [web index](https://github.com/bencodess/open-skills) locally.
 
 ### Categories
 
