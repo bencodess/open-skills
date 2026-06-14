@@ -1,18 +1,5 @@
 [
   {
-    "name": "ui-ux-pro-max",
-    "desc": "Comprehensive UI/UX design intelligence with searchable database of 67 styles, 96 color palettes, 57 font pairings, and 99 UX guidelines.",
-    "tags": [
-      "design",
-      "ui",
-      "ux",
-      "frontend"
-    ],
-    "status": "curated",
-    "license": "MIT",
-    "path": "skills/ui-ux-pro-max/SKILL.md"
-  },
-  {
     "name": "customize-opencode",
     "desc": "Edit or create opencode's own configuration files including opencode.json, .opencode/ files, agents, subagents, skills, plugins, MCP servers, and permission rules.",
     "tags": [
