@@ -87,26 +87,18 @@ async function tui(args) {
     installedCount = installed.length
   }
 
-  let searchInput
-  let skillSelect
-
-  function buildList() {
-    selectedIndex = 0
+  // Always build a FRESH Select with the correct selectedIndex and options.
+  // Construct methods (setSelectedIndex, options=) are queued as pending calls
+  // and never execute after mount — so we create a new one every time.
+  function makeSelect(selIndex) {
     const items = filteredSkills()
-
-    searchInput = Input({
-      width: '100%',
-      placeholder: '  🔍 filter skills...',
-      backgroundColor: C.bg,
-      focusedBackgroundColor: C.panel,
-      textColor: C.text,
-      cursorColor: C.orange,
-    })
-
-    skillSelect = Select({
+    if (selIndex >= items.length) selIndex = Math.max(0, items.length - 1)
+    selectedIndex = selIndex
+    return Select({
       width: '100%',
       height: '100%',
       options: fmtOpts(items),
+      selectedIndex,
       backgroundColor: C.bg,
       textColor: C.text,
       selectedBackgroundColor: C.orangeDark,
@@ -117,12 +109,29 @@ async function tui(args) {
       showDescription: true,
       wrapSelection: true,
     })
+  }
+
+  let searchInput
+
+  function buildList(selIndex) {
+    selectedIndex = selIndex ?? 0
+    const items = filteredSkills()
+    if (selectedIndex >= items.length) selectedIndex = Math.max(0, items.length - 1)
+
+    searchInput = Input({
+      width: '100%',
+      placeholder: '  🔍 filter skills...',
+      backgroundColor: C.bg,
+      focusedBackgroundColor: C.panel,
+      textColor: C.text,
+      cursorColor: C.orange,
+    })
 
     searchInput.on('input', value => {
       currentFilter = value
-      selectedIndex = 0
-      skillSelect.options = fmtOpts(filteredSkills())
-      skillSelect.setSelectedIndex(0)
+      renderer.root.removeAll()
+      renderer.root.add(buildList(0))
+      process.nextTick(() => renderer.root.focus?.())
     })
 
     const headerBar = Box(
@@ -150,7 +159,7 @@ async function tui(args) {
 
     const listArea = Box(
       { width: '100%', flexGrow: 1, backgroundColor: C.bg },
-      skillSelect,
+      makeSelect(selectedIndex),
     )
 
     const footerBar = Box(
@@ -160,7 +169,7 @@ async function tui(args) {
         flexDirection: 'row', alignItems: 'center',
         paddingLeft: 2, paddingRight: 2,
       },
-      Text({ content: '  ↑↓ nav  •  Enter detail  •  Tab switch  •  / search  •  q quit', fg: C.muted }),
+      Text({ content: '  ↑↓ nav  •  Enter detail  •  / search  •  q quit', fg: C.muted }),
     )
 
     return Box(
@@ -172,7 +181,6 @@ async function tui(args) {
   function buildDetail() {
     const skill = detailSkill
     if (!skill) return buildList()
-    const isInstalled = installedNames.has(skill.name)
 
     return Box(
       { width: '100%', height: '100%', flexDirection: 'column', backgroundColor: C.bg, padding: 2, gap: 1 },
@@ -184,16 +192,16 @@ async function tui(args) {
       Text({ content: `tags: ${skill.tags?.join(', ') || 'none'}`, fg: C.muted }),
       Text({ content: `license: ${skill.license || 'unknown'}`, fg: C.muted }),
       Box({ height: 1 }),
-      Text({ content: isInstalled ? t`${bold('✓ installed')}` : t`press ${bold(fg(C.orange)('i'))} to install`, fg: isInstalled ? C.green : C.text }),
+      Text({ content: installedNames.has(skill.name) ? t`${bold('✓ installed')}` : t`press ${bold(fg(C.orange)('i'))} to install`, fg: installedNames.has(skill.name) ? C.green : C.text }),
       Box({ flexGrow: 1 }),
       Text({ content: '  press b to go back  •  q quit', fg: C.muted }),
     )
   }
 
-  function showList() {
+  function showList(idx) {
     detailSkill = null
     renderer.root.removeAll()
-    renderer.root.add(buildList())
+    renderer.root.add(buildList(idx ?? selectedIndex))
     process.nextTick(() => searchInput?.focus())
   }
 
@@ -239,9 +247,6 @@ async function tui(args) {
     }
   }
 
-  renderer.root.add(buildList())
-  process.nextTick(() => searchInput?.focus())
-
   renderer.keyInput.on('keypress', key => {
     if (awaitingKey) {
       awaitingKey = false
@@ -277,12 +282,11 @@ async function tui(args) {
       return
     }
 
-    // Up/Down: navigate list
+    // Up/Down: navigate — rebuild with new index
     if (key.name === 'up' || key.name === 'k') {
       const skills = filteredSkills()
       if (skills.length > 0) {
-        selectedIndex = Math.max(0, selectedIndex - 1)
-        if (skillSelect) skillSelect.setSelectedIndex(selectedIndex)
+        showList(Math.max(0, selectedIndex - 1))
       }
       return
     }
@@ -290,19 +294,7 @@ async function tui(args) {
     if (key.name === 'down' || key.name === 'j') {
       const skills = filteredSkills()
       if (skills.length > 0) {
-        selectedIndex = Math.min(skills.length - 1, selectedIndex + 1)
-        if (skillSelect) skillSelect.setSelectedIndex(selectedIndex)
-      }
-      return
-    }
-
-    // Tab: toggle focus
-    if (key.name === 'tab') {
-      if (searchInput) {
-        if (skillSelect) {
-          // If search is focused, blur it to let Select visualize highlight
-        }
-        searchInput.focus()
+        showList(Math.min(skills.length - 1, selectedIndex + 1))
       }
       return
     }
@@ -315,16 +307,14 @@ async function tui(args) {
 
     // Escape: clear search
     if (key.name === 'escape') {
-      if (searchInput) {
-        searchInput.value = ''
-        currentFilter = ''
-        selectedIndex = 0
-        skillSelect.options = fmtOpts(registry)
-        skillSelect.setSelectedIndex(0)
-      }
+      currentFilter = ''
+      selectedIndex = 0
+      showList(0)
       return
     }
   })
+
+  showList(0)
 }
 
 module.exports = tui
