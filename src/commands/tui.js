@@ -132,10 +132,7 @@ async function tui(args) {
 
     searchInput.on('enter', () => focusList())
 
-    skillSelect.on('itemSelected', (index, option) => {
-      detailSkill = option.value
-      if (detailSkill) showDetail()
-    })
+    // Enter handled globally below to avoid focus/event conflicts
 
     const headerBar = Box(
       {
@@ -288,6 +285,17 @@ async function tui(args) {
         focusList()
       } else {
         focusSearch()
+      }
+      return
+    }
+
+    if (key.name === 'return') {
+      if (!searchFocused && skillSelect) {
+        const opt = skillSelect.getSelectedOption()
+        if (opt && opt.value) {
+          detailSkill = opt.value
+          showDetail()
+        }
       }
       return
     }
