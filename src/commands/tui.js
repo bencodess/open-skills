@@ -51,7 +51,7 @@ async function tui(args) {
   let currentFilter = ''
   let detailSkill = null
   let awaitingKey = false
-  let searchFocused = true
+  let selectedIndex = 0
 
   function filteredSkills() {
     if (!currentFilter) return registry
@@ -87,20 +87,13 @@ async function tui(args) {
     installedCount = installed.length
   }
 
-  function focusSearch() {
-    searchFocused = true
-    searchInput?.focus()
-  }
-
-  function focusList() {
-    searchFocused = false
-    skillSelect?.focus()
-  }
-
   let searchInput
   let skillSelect
 
   function buildList() {
+    selectedIndex = 0
+    const items = filteredSkills()
+
     searchInput = Input({
       width: '100%',
       placeholder: '  🔍 filter skills...',
@@ -113,7 +106,7 @@ async function tui(args) {
     skillSelect = Select({
       width: '100%',
       height: '100%',
-      options: fmtOpts(filteredSkills()),
+      options: fmtOpts(items),
       backgroundColor: C.bg,
       textColor: C.text,
       selectedBackgroundColor: C.orangeDark,
@@ -127,23 +120,17 @@ async function tui(args) {
 
     searchInput.on('input', value => {
       currentFilter = value
+      selectedIndex = 0
       skillSelect.options = fmtOpts(filteredSkills())
+      skillSelect.setSelectedIndex(0)
     })
-
-    searchInput.on('enter', () => focusList())
-
-    // Enter handled globally below to avoid focus/event conflicts
 
     const headerBar = Box(
       {
-        width: '100%',
-        height: 3,
+        width: '100%', height: 3,
         backgroundColor: C.orangeDark,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingLeft: 2,
-        paddingRight: 2,
-        gap: 2,
+        flexDirection: 'row', alignItems: 'center',
+        paddingLeft: 2, paddingRight: 2, gap: 2,
       },
       Text({ content: t`${bold('⚙ open-skills')}`, fg: '#fff' }),
       Text({ content: `${registry.length} skills`, fg: C.orangeLight }),
@@ -152,15 +139,11 @@ async function tui(args) {
 
     const searchRow = Box(
       {
-        width: '100%',
-        height: 3,
+        width: '100%', height: 3,
         backgroundColor: C.bg,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingLeft: 1,
-        paddingRight: 1,
-        borderStyle: 'single',
-        borderColor: C.border,
+        flexDirection: 'row', alignItems: 'center',
+        paddingLeft: 1, paddingRight: 1,
+        borderStyle: 'single', borderColor: C.border,
       },
       searchInput,
     )
@@ -172,15 +155,12 @@ async function tui(args) {
 
     const footerBar = Box(
       {
-        width: '100%',
-        height: 1,
+        width: '100%', height: 1,
         backgroundColor: C.panel,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingLeft: 2,
-        paddingRight: 2,
+        flexDirection: 'row', alignItems: 'center',
+        paddingLeft: 2, paddingRight: 2,
       },
-      Text({ content: '  [Tab] switch focus  •  ↑↓ nav  •  Enter detail  •  q quit', fg: C.muted }),
+      Text({ content: '  ↑↓ nav  •  Enter detail  •  Tab switch  •  / search  •  q quit', fg: C.muted }),
     )
 
     return Box(
@@ -214,7 +194,7 @@ async function tui(args) {
     detailSkill = null
     renderer.root.removeAll()
     renderer.root.add(buildList())
-    process.nextTick(() => searchFocused ? searchInput?.focus() : skillSelect?.focus())
+    process.nextTick(() => searchInput?.focus())
   }
 
   function showDetail() {
@@ -260,7 +240,7 @@ async function tui(args) {
   }
 
   renderer.root.add(buildList())
-  process.nextTick(() => focusSearch())
+  process.nextTick(() => searchInput?.focus())
 
   renderer.keyInput.on('keypress', key => {
     if (awaitingKey) {
@@ -274,6 +254,7 @@ async function tui(args) {
       return
     }
 
+    // --- detail view ---
     if (detailSkill) {
       if (key.name === 'b' || key.name === 'escape') {
         showList()
@@ -283,34 +264,65 @@ async function tui(args) {
       return
     }
 
-    if (key.name === 'return' && !searchFocused && skillSelect) {
-      const idx = skillSelect.getSelectedIndex()
-      const opts = skillSelect.options
-      if (idx >= 0 && opts && opts[idx] && opts[idx].value) {
-        detailSkill = opts[idx].value
+    // --- list view ---
+
+    // Enter: open selected skill
+    if (key.name === 'return') {
+      const skills = filteredSkills()
+      const skill = skills[selectedIndex]
+      if (skill) {
+        detailSkill = skill
         showDetail()
       }
       return
     }
 
-    if (key.name === 'tab') {
-      if (searchFocused) {
-        focusList()
-      } else {
-        focusSearch()
+    // Up/Down: navigate list
+    if (key.name === 'up' || key.name === 'k') {
+      const skills = filteredSkills()
+      if (skills.length > 0) {
+        selectedIndex = Math.max(0, selectedIndex - 1)
+        if (skillSelect) skillSelect.setSelectedIndex(selectedIndex)
       }
       return
     }
 
+    if (key.name === 'down' || key.name === 'j') {
+      const skills = filteredSkills()
+      if (skills.length > 0) {
+        selectedIndex = Math.min(skills.length - 1, selectedIndex + 1)
+        if (skillSelect) skillSelect.setSelectedIndex(selectedIndex)
+      }
+      return
+    }
+
+    // Tab: toggle focus
+    if (key.name === 'tab') {
+      if (searchInput) {
+        if (skillSelect) {
+          // If search is focused, blur it to let Select visualize highlight
+        }
+        searchInput.focus()
+      }
+      return
+    }
+
+    // / : focus search
     if (key.name === '/') {
-      focusSearch()
-    } else if (key.name === 'escape') {
-      if (searchFocused) {
+      searchInput?.focus()
+      return
+    }
+
+    // Escape: clear search
+    if (key.name === 'escape') {
+      if (searchInput) {
         searchInput.value = ''
         currentFilter = ''
+        selectedIndex = 0
         skillSelect.options = fmtOpts(registry)
-        focusList()
+        skillSelect.setSelectedIndex(0)
       }
+      return
     }
   })
 }
