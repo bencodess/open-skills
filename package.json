@@ -16,5 +16,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.4.1"
   }
 }
