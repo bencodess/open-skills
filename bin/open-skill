@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Follow symlink to the real script location
+SRC="$(readlink -f "${BASH_SOURCE[0]}")"
+DIR="$( cd "$( dirname "$SRC" )" && pwd )"
+if command -v bun &>/dev/null; then
+  exec bun "$DIR/open-skill.js" "$@"
+else
+  exec node "$DIR/open-skill.js" "$@"
+fi
