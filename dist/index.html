@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenCode Skill Index</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-color: #2a2a3a; }
+    :root {
+      --bg: #0c0c10;
+      --fg: #f0f0f5;
+      --card: #131318;
+      --card-fg: #f0f0f5;
+      --muted: #1a1a24;
+      --muted-fg: #8888a0;
+      --primary: #f97316;
+      --primary-fg: #0c0c10;
+      --border: #2a2a3a;
+      --destructive: #ef4444;
+      --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --header-h: 56px;
+      --pipe-h: 14px;
+      --safety-h: 4px;
+    }
+    html { background: var(--bg); color: var(--fg); font-family: var(--font-sans); }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0c0c10; }
+    ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3a3a4a; }
+
+    /* scanlines overlay */
+    .scanlines { position: relative; }
+    .scanlines::after {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    /* header */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+      background: #14141a; border-bottom: 1px solid var(--border); z-index: 50;
+      box-shadow: 0 0 20px rgba(249,115,22,0.15), 0 0 40px rgba(249,115,22,0.05);
+      display: flex; flex-direction: column;
+    }
+    .header-stripe {
+      height: 3px;
+      background: repeating-linear-gradient(90deg,#3a3a4a 0px,#3a3a4a 4px,transparent 4px,transparent 8px);
+    }
+    .header-inner {
+      flex: 1; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-blocks { display: flex; align-items: center; gap: 4px; }
+    .block { width: 12px; height: 12px; }
+    .block-1 { background: var(--primary); }
+    .block-2 { background: rgba(249,115,22,0.6); }
+    .block-3 { background: rgba(249,115,22,0.3); }
+    .header-title { font-size: 14px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--fg); }
+    .header-title span { color: var(--primary); }
+    .header-sub { font-size: 10px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .header-right { display: none; align-items: center; gap: 16px; }
+    @media (min-width: 640px) { .header-right { display: flex; } .header-inner { padding: 0 48px; } }
+    .header-version { font-size: 10px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .header-count { font-size: 12px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .header-dot { width: 6px; height: 6px; border-radius: 50%; background: #3a3a4a; }
+
+    /* pipe duct */
+    .pipe-duct {
+      position: fixed; top: var(--header-h); left: 0; right: 0; height: var(--pipe-h);
+      z-index: 40; pointer-events: none;
+    }
+    .pipe-track {
+      position: absolute; top: 4px; left: 0; right: 0; height: 8px;
+      background: linear-gradient(to bottom, #4a4a5e, #3a3a4a);
+      border-radius: 2px;
+    }
+    .pipe-bolt { position: absolute; width: 12px; height: 12px; background: #3a3a4a; border-radius: 50%; top: 1px; }
+
+    /* safety bar */
+    .safety-bar-wrap {
+      position: fixed; top: calc(var(--header-h) + var(--pipe-h)); height: var(--safety-h);
+      left: 0; right: 0; z-index: 30; pointer-events: none;
+    }
+    .safety-bar {
+      height: 4px; width: 100%; opacity: 0.6;
+      background: repeating-linear-gradient(-45deg, #f97316 0px, #f97316 8px, #fbbf24 8px, #fbbf24 16px);
+    }
+
+    /* vertical pipes */
+    .vpipe {
+      position: fixed; top: 0; bottom: 0; width: 5px; z-index: 30;
+      pointer-events: none; opacity: 0.3; display: none;
+      background: linear-gradient(to right, #3a3a4a, #4a4a5e, #3a3a4a);
+    }
+    @media (min-width: 768px) { .vpipe { display: block; } }
+    .vpipe-left { left: 60px; }
+    .vpipe-right { right: 60px; }
+
+    /* main */
+    .main {
+      position: relative; z-index: 10; flex: 1;
+      padding: 96px 16px 32px; max-width: 1280px; margin: 0 auto; width: 100%;
+    }
+    @media (min-width: 768px) { .main { padding: 96px 48px 32px; } }
+    @media (min-width: 1024px) { .main { padding: 96px 64px 32px; } }
+
+    /* prompt line */
+    .prompt { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--muted-fg); margin-bottom: 24px; }
+    .prompt-dollar { color: var(--primary); }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+    .cursor::after { content: '\u258a'; color: var(--primary); animation: blink 1s step-end infinite; margin-left: 2px; }
+
+    /* search section */
+    .search-section { margin-bottom: 40px; background: #0c0c10; border: 1px solid var(--border); padding: 24px; }
+    @media (min-width: 768px) { .search-section { padding: 40px; } }
+    .search-section .inner { max-width: 768px; }
+    .search-prompt { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--muted-fg); margin-bottom: 16px; }
+    .search-prompt span { color: var(--primary); }
+    .search-title { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
+    @media (min-width: 768px) { .search-title { font-size: 30px; } }
+    .search-desc { font-size: 14px; color: var(--muted-fg); margin-bottom: 24px; max-width: 540px; }
+    .search-concrete {
+      background-color: #0c0c10;
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(249,115,22,0.015) 2px, rgba(249,115,22,0.015) 4px), repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 5px);
+    }
+
+    /* search input */
+    .search-box {
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid var(--border); background: rgba(26,26,36,0.5); padding: 12px 16px;
+      margin-bottom: 16px; transition: border-color 0.2s;
+    }
+    .search-box:focus-within { border-color: var(--primary); }
+    .search-box svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--muted-fg); }
+    .search-box input {
+      flex: 1; border: none; background: transparent; padding: 0; outline: none;
+      font-family: var(--font-sans); font-size: 14px; color: var(--fg);
+    }
+    .search-box input::placeholder { color: var(--muted-fg); }
+    .search-kbd {
+      display: none; align-items: center; gap: 4px; padding: 2px 8px;
+      font-family: var(--font-mono); font-size: 12px; background: var(--muted);
+      color: var(--muted-fg); border: 1px solid var(--border);
+    }
+    @media (min-width: 640px) { .search-kbd { display: inline-flex; } }
+
+    /* tags */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      display: inline-flex; align-items: center; padding: 2px 10px;
+      font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--border);
+      background: var(--muted); color: var(--muted-fg); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .tag:hover { border-color: var(--primary); color: var(--fg); }
+    .tag.active { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+
+    /* toolbar */
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    /* stats */
+    .stats { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 12px 16px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    @media (min-width: 768px) { .stats { gap: 40px; } }
+    .stat { display: flex; align-items: center; gap: 8px; }
+    .stat-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .stat-label { font-size: 12px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .stat-val { font-weight: 700; font-size: 16px; }
+    .stat-val.total { color: var(--primary); }
+
+    /* buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      padding: 4px 12px; font-family: var(--font-mono); font-size: 12px;
+      border: 1px solid var(--border); background: transparent; color: var(--muted-fg);
+      cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+      text-decoration: none; line-height: 28px; height: 32px;
+    }
+    .btn:hover { border-color: var(--primary); color: var(--fg); }
+    .btn-secondary {
+      background: var(--muted); border-color: var(--border); color: var(--muted-fg);
+    }
+    .btn-secondary:hover { border-color: var(--primary); background: rgba(249,115,22,0.1); color: var(--primary); }
+    .btn-primary {
+      background: var(--primary); color: var(--primary-fg); border-color: var(--primary);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn svg { width: 14px; height: 14px; }
+
+    /* skill grid */
+    .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1280px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+    /* skill card */
+    .card {
+      border: 1px solid var(--border); background: var(--card); cursor: pointer;
+      display: flex; flex-direction: column; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(249,115,22,0.1); }
+    .card-body { padding: 16px; display: flex; flex-direction: column; flex: 1; }
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+    .card-name { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: -0.025em; color: var(--primary); }
+    .card-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .card-desc { font-size: 12px; line-height: 1.625; color: var(--muted-fg); margin-bottom: 12px; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .card-tag {
+      display: inline-flex; align-items: center; border: 1px solid var(--border);
+      background: var(--muted); color: var(--muted-fg); padding: 1px 8px;
+      font-family: var(--font-mono); font-size: 10px;
+    }
+    .card-underline { height: 2px; width: 0; background: var(--primary); transition: width 0.3s; }
+    .card:hover .card-underline { width: 100%; }
+
+    /* empty state */
+    .empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 80px 0; text-align: center;
+    }
+    .empty svg { width: 64px; height: 64px; margin-bottom: 16px; color: var(--muted-fg); }
+    .empty-title { font-size: 18px; font-weight: 500; margin-bottom: 4px; color: var(--muted-fg); }
+    .empty-desc { font-size: 14px; color: rgba(136,136,160,0.6); }
+
+    /* footer */
+    .footer {
+      border-top: 1px solid var(--border); background: var(--card);
+      margin-top: 48px; padding: 24px 16px;
+      background-color: #111116;
+      background-image: linear-gradient(90deg, rgba(249,115,22,0.04) 1px, transparent 1px), linear-gradient(rgba(249,115,22,0.04) 1px, transparent 1px);
+      background-size: 60px 30px;
+    }
+    @media (min-width: 768px) { .footer { padding: 24px 48px; } }
+    .footer-inner { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 16px; }
+    @media (min-width: 640px) { .footer-inner { flex-direction: row; } }
+    .footer-left { display: flex; align-items: center; gap: 12px; }
+    .footer-block { width: 8px; height: 8px; background: var(--primary); }
+    .footer-text { font-size: 12px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .footer-text span { color: var(--primary); }
+    .footer-right { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--muted-fg); }
+    .footer-link { font-family: var(--font-mono); color: var(--muted-fg); text-decoration: none; transition: color 0.2s; }
+    .footer-link:hover { color: var(--primary); }
+    .footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #3a3a4a; }
+
+    /* dialog overlay */
+    .dialog-overlay {
+      position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .dialog-overlay.open { display: flex; }
+    .dialog {
+      background: var(--card); border: 1px solid var(--border);
+      max-width: 550px; width: 100%; max-height: 85vh; overflow-y: auto;
+      padding: 24px; position: relative;
+    }
+    .dialog-close {
+      position: absolute; top: 16px; right: 16px; background: none; border: none;
+      color: var(--muted-fg); font-size: 20px; cursor: pointer; line-height: 1;
+    }
+    .dialog-close:hover { color: var(--fg); }
+    .dialog-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .dialog-title { font-family: var(--font-mono); color: var(--primary); font-size: 18px; font-weight: 600; }
+    .dialog-badge {
+      display: inline-flex; align-items: center; padding: 1px 8px;
+      font-family: var(--font-mono); font-size: 11px; background: var(--muted);
+      color: var(--muted-fg); border: 1px solid var(--border);
+    }
+    .dialog-badge.curated { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .dialog-badge.experimental { background: rgba(99,102,241,0.2); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+    .dialog-badge.community { background: rgba(107,114,128,0.2); color: #9ca3af; border-color: rgba(107,114,128,0.3); }
+    .dialog-desc { font-size: 14px; color: var(--muted-fg); margin-bottom: 16px; }
+    .dialog-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .dialog-tag {
+      display: inline-flex; align-items: center; padding: 1px 8px;
+      font-family: var(--font-mono); font-size: 11px;
+      border: 1px solid var(--border); color: var(--muted-fg);
+    }
+    .dialog-install {
+      border: 1px solid var(--border); background: #0a0a0e; padding: 12px;
+      margin-bottom: 12px;
+    }
+    .dialog-install-prompt {
+      display: flex; align-items: center; gap: 8px; font-family: var(--font-mono);
+      font-size: 12px; color: var(--primary); margin-bottom: 8px;
+    }
+    .dialog-install-block {
+      background: var(--bg); border: 1px solid var(--border); padding: 10px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--muted-fg);
+      word-break: break-all; margin-bottom: 8px; user-select: all;
+    }
+    .dialog-install-block .hl { color: var(--primary); }
+    .dialog-install-note { font-size: 10px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .dialog-install-note a { color: var(--primary); text-decoration: none; }
+    .dialog-install-note a:hover { text-decoration: underline; }
+    .dialog-meta { font-size: 12px; font-family: var(--font-mono); color: var(--muted-fg); }
+    .dialog-meta span { color: var(--primary); }
+
+    /* responsive dialog */
+    @media (min-width: 640px) { .dialog { border-radius: 0; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body class="scanlines">
+  <!-- vertical pipes -->
+  <div class="vpipe vpipe-left"></div>
+  <div class="vpipe vpipe-right"></div>
+
+  <!-- header -->
+  <header class="header" role="banner">
+    <div class="header-stripe"></div>
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-blocks">
+          <span class="block block-1"></span>
+          <span class="block block-2"></span>
+          <span class="block block-3"></span>
+        </div>
+        <div>
+          <h1 class="header-title"><span>//</span> Skill Index</h1>
+          <p class="header-sub">opencode agent skills registry</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="header-version" id="headerVersion">v0.1.0</span>
+        <span class="header-count" id="headerCount">0 skills</span>
+        <span class="header-dot"></span>
+        <span class="header-dot"></span>
+        <span class="header-dot"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- pipe duct -->
+  <div class="pipe-duct" aria-hidden="true">
+    <div class="pipe-track"></div>
+    <span class="pipe-bolt" style="left:15%"></span>
+    <span class="pipe-bolt" style="left:35%"></span>
+    <span class="pipe-bolt" style="left:55%"></span>
+    <span class="pipe-bolt" style="left:75%"></span>
+  </div>
+
+  <!-- safety bar -->
+  <div class="safety-bar-wrap" aria-hidden="true">
+    <div class="safety-bar"></div>
+  </div>
+
+  <!-- main -->
+  <main class="main">
+    <div class="prompt">
+      <span class="prompt-dollar">~/$</span>
+      <span>cat skills.json | open-skill index</span>
+      <span class="cursor"></span>
+    </div>
+
+    <!-- search section -->
+    <section class="search-section search-concrete">
+      <div class="inner">
+        <div class="search-prompt"><span>~/$</span> skills search</div>
+        <h2 class="search-title">discover agent skills</h2>
+        <p class="search-desc">Searchable catalog of reusable agent instructions, workflows, and capabilities for OpenCode and compatible agent runtimes.</p>
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Filter skills by name, description, or tags..." autocomplete="off" aria-label="Search skills">
+          <kbd class="search-kbd">/</kbd>
+        </div>
+        <div class="tags" id="tagContainer" role="group" aria-label="Filter by category">
+          <span class="tag active" data-tag="all">all</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="stats" id="statsContainer">
+        <div class="stat"><span class="stat-dot" style="background:#f97316"></span><span class="stat-label"><span class="stat-val total" id="statTotal">0</span> total</span></div>
+        <div class="stat"><span class="stat-dot" style="background:#ea580c"></span><span class="stat-label"><span id="statCurated">0</span> curated</span></div>
+        <div class="stat"><span class="stat-dot" style="background:#6366f1"></span><span class="stat-label"><span id="statExperimental">0</span> experimental</span></div>
+        <div class="stat"><span class="stat-dot" style="background:#6b7280"></span><span class="stat-label"><span id="statCommunity">0</span> community</span></div>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn" id="syncBtn">sync</button>
+        <button class="btn" id="exportBtn">export</button>
+        <a class="btn btn-secondary" href="https://github.com/bencodess/open-skills/issues/new" target="_blank" rel="noopener noreferrer">
+          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          submit skill
+        </a>
+      </div>
+    </div>
+
+    <!-- grid -->
+    <div class="grid" id="skillGrid" role="list"></div>
+  </main>
+
+  <!-- footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span class="footer-block"></span>
+        <span class="footer-text"><span>opencode</span> skill index v0.1.0</span>
+      </div>
+      <div class="footer-right">
+        <a class="footer-link" href="https://github.com/bencodess/open-skills" target="_blank" rel="noopener noreferrer">github.com/bencodess/open-skills</a>
+        <span class="footer-dot"></span>
+        <span>conforming basement // build 004</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- dialog -->
+  <div class="dialog-overlay" id="dialogOverlay">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <button class="dialog-close" id="dialogClose" aria-label="Close">&times;</button>
+      <div id="dialogContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const REPO = 'https://github.com/bencodess/open-skills';
+    const RAW = 'https://raw.githubusercontent.com/bencodess/open-skills/main';
+    const APP_VERSION = '0.1.0';
+
+    const SKILLS = [
+      { "name": "customize-opencode", "desc": "Edit or create opencode's own configuration files including opencode.json, .opencode/ files, agents, subagents, skills, plugins, MCP servers, and permission rules.", "tags": ["config", "opencode", "admin"], "status": "curated", "license": "MIT", "path": "skills/customize-opencode/SKILL.md" },
+      { "name": "skill-installer", "desc": "Install curated and external skills from GitHub repositories. Automatically discovers and places SKILL.md files in the correct directory.", "tags": ["skills", "installer", "github"], "status": "curated", "license": "MIT", "path": "skills/skill-installer/SKILL.md" },
+      { "name": "skill-creator", "desc": "Guide agents through building well-structured SKILL.md files with proper YAML frontmatter, descriptions, and usage instructions.", "tags": ["skills", "authoring", "scaffold"], "status": "curated", "license": "MIT", "path": "skills/skill-creator/SKILL.md" },
+      { "name": "git-release", "desc": "Create consistent releases and changelogs. Draft release notes from merged PRs, propose version bumps, and provide copy-pasteable gh release create commands.", "tags": ["git", "release", "changelog", "ci"], "status": "curated", "license": "MIT", "path": "skills/git-release/SKILL.md" },
+      { "name": "pr-review", "desc": "Automated pull request review workflow. Analyzes diff quality, tests, coverage, and provides structured feedback with change requests.", "tags": ["github", "review", "qa"], "status": "curated", "license": "MIT", "path": "skills/pr-review/SKILL.md" },
+      { "name": "webapp-testing", "desc": "Test local web apps with Playwright. Uses Python Playwright scripts with server lifecycle helper. Inspects rendered pages before acting with discovered selectors.", "tags": ["testing", "playwright", "e2e", "python"], "status": "curated", "license": "MIT", "path": "skills/webapp-testing/SKILL.md" },
+      { "name": "deep-research", "desc": "Structured deep research skill with human-in-the-loop control. Multi-step investigation with source tracking, summarization, and citation management.", "tags": ["research", "analysis", "writing"], "status": "curated", "license": "MIT", "path": "skills/deep-research/SKILL.md" },
+      { "name": "test", "desc": "Run tests and analyze results across multiple frameworks. Automatic test file discovery, execution, and failure diagnosis with fix suggestions.", "tags": ["testing", "qa", "automation"], "status": "experimental", "license": "MIT", "path": "skills/test/SKILL.md" },
+      { "name": "docs", "desc": "Write and maintain documentation. Generates README files, API docs, inline comments, and architecture decision records from code analysis.", "tags": ["writing", "documentation", "readme"], "status": "experimental", "license": "MIT", "path": "skills/docs/SKILL.md" },
+      { "name": "debug", "desc": "Systematic debugging workflow. Reproduces issues, instruments code, analyzes logs, and iterates toward root cause identification with suggested fixes.", "tags": ["debugging", "troubleshooting", "analysis"], "status": "experimental", "license": "MIT", "path": "skills/debug/SKILL.md" },
+      { "name": "refactor", "desc": "Code refactoring patterns and migrations. Identifies code smells, plans incremental refactors, and executes safe transformations with test validation.", "tags": ["refactoring", "clean-code", "migration"], "status": "experimental", "license": "MIT", "path": "skills/refactor/SKILL.md" },
+      { "name": "security-audit", "desc": "Security review and vulnerability detection. Scans dependencies, code patterns, and configuration for OWASP Top 10 and CVE exposure.", "tags": ["security", "audit", "vulnerability", "owasp"], "status": "experimental", "license": "MIT", "path": "skills/security-audit/SKILL.md" },
+      { "name": "api-design", "desc": "REST and GraphQL API design patterns. Suggests endpoint structures, request/response schemas, error handling, versioning, and OpenAPI specification generation.", "tags": ["api", "rest", "graphql", "backend"], "status": "experimental", "license": "MIT", "path": "skills/api-design/SKILL.md" },
+      { "name": "database", "desc": "Database schema design and migrations. Analyzes data models, suggests indexes, generates migration files, and optimizes query patterns.", "tags": ["database", "sql", "schema", "migration"], "status": "experimental", "license": "MIT", "path": "skills/database/SKILL.md" },
+      { "name": "docker", "desc": "Docker and container management. Creates optimized Dockerfiles, docker-compose setups, multi-stage builds, and containerization strategies.", "tags": ["docker", "containers", "devops", "infra"], "status": "experimental", "license": "MIT", "path": "skills/docker/SKILL.md" },
+      { "name": "ci-cd", "desc": "CI/CD pipeline setup and maintenance. Configures GitHub Actions, GitLab CI, or other runners with caching, parallel jobs, and deployment stages.", "tags": ["ci", "cd", "github-actions", "devops"], "status": "experimental", "license": "MIT", "path": "skills/ci-cd/SKILL.md" },
+      { "name": "accessibility", "desc": "Accessibility auditing and remediation. Scans for WCAG violations, suggests ARIA attributes, keyboard navigation fixes, and screen reader improvements.", "tags": ["a11y", "accessibility", "wcag", "aria"], "status": "experimental", "license": "MIT", "path": "skills/accessibility/SKILL.md" },
+      { "name": "performance", "desc": "Performance optimization analysis. Identifies bottlenecks in code, bundles, rendering, and queries with measurable improvement suggestions.", "tags": ["performance", "optimization", "profiling"], "status": "experimental", "license": "MIT", "path": "skills/performance/SKILL.md" },
+      { "name": "architecture", "desc": "System architecture design and review. Evaluates trade-offs, proposes module boundaries, suggests patterns, and produces ADRs for decision tracking.", "tags": ["architecture", "design", "planning", "adr"], "status": "experimental", "license": "MIT", "path": "skills/architecture/SKILL.md" },
+      { "name": "commit", "desc": "Contextual commit messages with structured formatting. Analyzes staged changes and produces conventional commit messages with scope and body.", "tags": ["git", "commit", "conventional"], "status": "community", "license": "MIT", "path": "skills/commit/SKILL.md" },
+      { "name": "deploy", "desc": "Deployment automation across environments. Manages build, staging, health checks, rollbacks, and environment-specific configuration injection.", "tags": ["deploy", "devops", "release", "automation"], "status": "community", "license": "MIT", "path": "skills/deploy/SKILL.md" },
+      { "name": "monitoring", "desc": "Application monitoring and observability setup. Configures logging, metrics, tracing, dashboards, and alert rules for production systems.", "tags": ["monitoring", "observability", "logging", "metrics"], "status": "community", "license": "MIT", "path": "skills/monitoring/SKILL.md" },
+      { "name": "memory", "desc": "AI memory management across sessions. Stores and retrieves context using vector databases, enabling persistent cross-session knowledge for agents.", "tags": ["memory", "persistence", "vector", "context"], "status": "community", "license": "MIT", "path": "skills/memory/SKILL.md" }
+    ];
+
+    const statusColors = {
+      curated: { dot: '#f97316' },
+      experimental: { dot: '#6366f1' },
+      community: { dot: '#6b7280' }
+    };
+
+    let skills = [...SKILLS];
+    let activeTag = 'all';
+    let query = '';
+    let selectedSkill = null;
+
+    const $ = (id) => document.getElementById(id);
+    const searchInput = $('searchInput');
+    const tagContainer = $('tagContainer');
+    const skillGrid = $('skillGrid');
+    const dialogOverlay = $('dialogOverlay');
+    const dialogContent = $('dialogContent');
+    const dialogClose = $('dialogClose');
+
+    function getAllTags() {
+      const set = new Set();
+      skills.forEach(s => s.tags.forEach(t => set.add(t)));
+      return [...set].sort();
+    }
+
+    function getQueryTerms() {
+      return query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    }
+
+    function getFiltered() {
+      const terms = getQueryTerms();
+      return skills.filter(s => {
+        if (activeTag !== 'all' && !s.tags.includes(activeTag)) return false;
+        if (terms.length > 0) {
+          const searchable = `${s.name} ${s.desc} ${s.tags.join(' ')} ${s.status}`.toLowerCase();
+          return terms.every(t => searchable.includes(t));
+        }
+        return true;
+      });
+    }
+
+    function getCounts() {
+      return {
+        total: skills.length,
+        curated: skills.filter(s => s.status === 'curated').length,
+        experimental: skills.filter(s => s.status === 'experimental').length,
+        community: skills.filter(s => s.status === 'community').length
+      };
+    }
+
+    function updateStats() {
+      const counts = getCounts();
+      $('headerCount').textContent = `${counts.total} skills`;
+      $('statTotal').textContent = counts.total;
+      $('statCurated').textContent = counts.curated;
+      $('statExperimental').textContent = counts.experimental;
+      $('statCommunity').textContent = counts.community;
+    }
+
+    function renderTags() {
+      const all = getAllTags();
+      let html = '<span class="tag active" data-tag="all">all</span>';
+      all.forEach(t => {
+        const active = activeTag === t ? ' active' : '';
+        html += `<span class="tag${active}" data-tag="${t}">${t}</span>`;
+      });
+      tagContainer.innerHTML = html;
+    }
+
+    function renderGrid() {
+      const filtered = getFiltered();
+      if (filtered.length === 0) {
+        skillGrid.innerHTML = `
+          <div class="empty" style="grid-column:1/-1">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <p class="empty-title">no skills found</p>
+            <p class="empty-desc">try adjusting your search or filter</p>
+          </div>`;
+        return;
+      }
+      let html = '';
+      filtered.forEach(s => {
+        const c = statusColors[s.status] || { dot: '#6b7280' };
+        html += `
+          <div class="card" role="listitem" data-skill="${s.name}">
+            <div class="card-body">
+              <div class="card-head">
+                <span class="card-name">${s.name}</span>
+                <span class="card-status" style="background:${c.dot}"></span>
+              </div>
+              <p class="card-desc">${s.desc}</p>
+              <div class="card-tags">${s.tags.map(t => `<span class="card-tag">${t}</span>`).join('')}</div>
+              <div class="card-underline"></div>
+            </div>
+          </div>`;
+      });
+      skillGrid.innerHTML = html;
+    }
+
+    function render() {
+      updateStats();
+      renderTags();
+      renderGrid();
+    }
+
+    function openDialog(skill) {
+      selectedSkill = skill;
+      const badgeClass = `dialog-badge ${skill.status}`;
+      const badgeLabel = skill.status;
+      dialogContent.innerHTML = `
+        <div class="dialog-header">
+          <h2 class="dialog-title">${skill.name}</h2>
+          <span class="${badgeClass}">${badgeLabel}</span>
+        </div>
+        <p class="dialog-desc">${skill.desc}</p>
+        <div class="dialog-tags">${skill.tags.map(t => `<span class="dialog-tag">${t}</span>`).join('')}</div>
+        <div class="dialog-install">
+          <div class="dialog-install-prompt"><span>$</span><span class="cursor">install ${skill.name}</span></div>
+          <div class="dialog-install-block"><span class="hl">curl</span> -O ${RAW}/${skill.path}</div>
+          <div class="dialog-install-block"><span class="hl">open-skill</span> install ${skill.name}</div>
+          <p class="dialog-install-note">or browse: <a href="${REPO}/blob/main/${skill.path}" target="_blank" rel="noopener noreferrer">${REPO.replace('https://', '')}/tree/main/${skill.path}</a></p>
+        </div>
+        <div class="dialog-meta"><p><span>license</span> ${skill.license}</p><p><span>path</span> ${skill.path}</p></div>
+      `;
+      dialogOverlay.classList.add('open');
+    }
+
+    function closeDialog() {
+      dialogOverlay.classList.remove('open');
+      selectedSkill = null;
+    }
+
+    function handleExport() {
+      const data = skills.map(({ name, desc, tags, status, license, path }) => ({ name, desc, tags, status, license, path }));
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'opencode-skills.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // event delegation
+    document.addEventListener('click', e => {
+      // tags
+      const tag = e.target.closest('.tag');
+      if (tag && tag.dataset.tag) {
+        activeTag = tag.dataset.tag;
+        render();
+        return;
+      }
+
+      // card click
+      const card = e.target.closest('.card');
+      if (card && card.dataset.skill) {
+        const skill = skills.find(s => s.name === card.dataset.skill);
+        if (skill) openDialog(skill);
+        return;
+      }
+
+      // dialog close
+      if (e.target === dialogOverlay || e.target.closest('#dialogClose')) {
+        closeDialog();
+        return;
+      }
+    });
+
+    // search input
+    searchInput.addEventListener('input', e => {
+      query = e.target.value;
+      renderGrid();
+    });
+
+    // sync button
+    $('syncBtn').addEventListener('click', () => {
+      skills = [...SKILLS];
+      activeTag = 'all';
+      query = '';
+      searchInput.value = '';
+      render();
+    });
+
+    // export button
+    $('exportBtn').addEventListener('click', handleExport);
+
+    // keyboard: escape to close dialog
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDialog();
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+    // init
+    render();
+  </script>
+</body>
+</html>
